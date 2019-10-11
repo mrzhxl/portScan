@@ -69,5 +69,6 @@ portScan
 ├── templates                   # 模板
 │   └── report.html
 └── tmp                         # 序列化数据
-    └── report.txt
+    └── report_high.txt
+   	└── report_low.txt
 
