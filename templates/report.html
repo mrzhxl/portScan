@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+    <div>
+        {% if tem %}
+            {% for project in tem %}
+                {% if tem[project]['ip_port']%}
+                    <br>------------------------------{{ project }}------------------------------<br/>
+                    {% for ip,port in tem[project]['ip_port'].items() %}
+                        <br>{{ ip }} {{ port}}<br/>
+                    {% endfor%}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>
