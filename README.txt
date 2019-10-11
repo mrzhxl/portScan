@@ -57,7 +57,7 @@ portScan
 │   ├── 项目名.txt
 ├── logs                        # 日志目录
 ├── lowscan.py                  # 全部端口扫描
-├── main.sh
+├── main.sh                     # 高危\全部端口扫描
 ├── portlist                    # 端口目录，每个项目一个文件，danger_ports.txt高危端口列表，all_ports.txt为全部扫描的端口列表
 │   ├── all_ports.txt
 │   └── danger_ports.txt
