@@ -18,4 +18,8 @@ CONFIG = {
 		'cmdb_username': '',
 		'cmdb_password': '',
 	},
+	'weixin': {
+		'Alertuserlist' : [],
+		'WeixinAlertUrl' : ''
+	}
 }

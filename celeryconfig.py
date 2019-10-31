@@ -10,12 +10,12 @@ REDIS_PASSWORD = ''
 enable_utc = True
 timezone = 'Asia/Shanghai'
 result_expires = 3600
-broker_url = 'amqp://username:password@hostsname/'		# 因网络原因，尤其是跨国玩两个使用rabbitmq，支持断线重连。redis不支持
+broker_url = 'amqp://username:password@IP/'		# 因网络原因，尤其是跨国玩两个使用rabbitmq，支持断线重连。redis不支持
 result_backend = 'redis://:%s@%s:%d/1' % (REDIS_PASSWORD, REDIS_HOST, REDIS_PORT)
 include = ['portScan.tasks']
 
+# 队列
 task_queues = (
-	# 北京、上海、台湾、日本、东南亚、美国、韩国（队列名任意写）
 	Queue("default", Exchange("default"), routing_key="default"),
 	Queue("for_task_bjscan", Exchange("for_task_bjscan"), routing_key="for_task_bjscan"),
 	Queue("for_task_shscan", Exchange("for_task_shscan"), routing_key="for_task_shscan"),

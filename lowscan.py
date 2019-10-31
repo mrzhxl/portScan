@@ -8,11 +8,11 @@ from config import conf
 import pickle
 
 sys.path.insert(0, '../')
-obj = __import__('highscan')
+obj = __import__('lowscan')
 
 from portScan.tasks import *
 from WhiteListProcess import checkPort
-from CmdbGetInfo import GetCmdbInfo
+from CmdbGetInfo import GetCmdbInfo, get_yaml
 
 
 URL = conf.CONFIG.get('cmdb').get('cmdb_host')
@@ -30,30 +30,25 @@ r = redis.Redis(connection_pool=pool)
 
 class High_scan(object):
 
-    def start_scan(self, ProPortFile, AllPortFile, ProIPfile, region):
+    def start_scan(self, app_ips, app_ports, AllPortFile, region):
         """
-        :param ProPortFile: 项目端口文件（白名单）
-        :param AllPortFile: 检查的端口文件
-        :param ProIPfile: 扫描的服务器列表
+        :param app_ips: 项目ip
+        :param app_ports: 项目端口（白名单）
+        :param AllPortFile: 扫描的服务器列表
         :param region: 地区（分配work）
         :return: 扫描结果（字典）
         """
-        PORTS = checkPort(ProPortFile, AllPortFile)
-
         result = {}
-        with open(os.getcwd() + '/iplist/' + ProIPfile, 'r') as ipfile:
-
-            ipfile = ipfile.readlines()
-
-        for ip in ipfile:
-            if ip:
-                # res = bj_scan.delay(ip, PORTS)
-                func = getattr(obj, '%s_scan' % region)     # 根据地区反射
-                res = func.delay(ip, PORTS)
-                result[ip] = res
-
+        for app, app_port in app_ports.items():
+            if app in app_ips:
+                PORTS = checkPort(app_port, AllPortFile)
+                for ip in app_ips[app]:
+                    func = getattr(obj, '%s_scan' % region)  # 根据地区反射
+                    res = func.delay(ip, PORTS)
+                    result[ip] = res
+            else:
+                print('服务名字对不上：', app)
         return result
-
 
 if __name__ == '__main__':
     starttime = time.time()
@@ -61,34 +56,44 @@ if __name__ == '__main__':
     high = High_scan()
     getcmdb = GetCmdbInfo(URL,username, passwd)
     pros = getcmdb.get_all_project()
+    Yaml = get_yaml('/all_project_port.yml')
+    data = Yaml.get_yaml_data()
+    # pros = ['USPT']
+
     task_lists = []
     for pro in pros:
+        server_info = getcmdb.get_all_info(pro)
+        dic = {}
+        for ins in server_info:
+            features = ins['application'].replace(ins['project'] + '-', '')
+            if features in dic.keys():
+                dic[features].append(ins['wip'])
+            else:
+                dic[features] = [ins['wip']]
         try:
             if pro.startswith('KR'):
-                kr_task_id = high.start_scan('%s_ports.txt' % pro, 'all_ports.txt', '%s.txt' % pro, 'kr')
-                task_lists.append({pro: kr_task_id})
+                task_id = high.start_scan(dic, data[pro], 'all_ports.txt', 'kr')
 
             elif pro.startswith('JP'):
-                jp_task_id = high.start_scan('%s_ports.txt' % pro, 'all_ports.txt', '%s.txt' % pro, 'jp')
-                task_lists.append({pro: jp_task_id})
+                task_id = high.start_scan(dic, data[pro], 'all_ports.txt', 'jp')
 
             elif pro.startswith('SGP'):
-                sgp_task_id = high.start_scan('%s_ports.txt' % pro, 'all_ports.txt', '%s.txt' % pro, 'sgp')
-                task_lists.append({pro: sgp_task_id})
+                task_id = high.start_scan(dic, data[pro], 'all_ports.txt', 'sgp')
 
             elif pro.startswith('TW'):
-                tw_task_id = high.start_scan('%s_ports.txt' % pro, 'all_ports.txt', '%s.txt' % pro, 'tw')
-                task_lists.append({pro: tw_task_id})
+                task_id = high.start_scan(dic, data[pro], 'all_ports.txt', 'tw')
 
             elif pro.startswith('US'):
-                us_task_id = high.start_scan('%s_ports.txt' % pro, 'all_ports.txt', '%s.txt' % pro, 'us')
-                task_lists.append({pro: us_task_id})
+                task_id = high.start_scan(dic, data[pro], 'all_ports.txt', 'us')
 
             else:
-                bj_task_id = high.start_scan('%s_ports.txt' % pro, 'all_ports.txt', '%s.txt' % pro, 'bj')
-                task_lists.append({pro: bj_task_id})
+                task_id = high.start_scan(dic, data[pro], 'all_ports.txt', 'bj')
+            task_lists.append({pro: task_id})
 
         except FileNotFoundError as e:
+            continue
+        except KeyError as e:
+            # print('该项目下没有服务器', e)
             continue
 
     s = pickle.dumps(task_lists)
@@ -114,5 +119,3 @@ if __name__ == '__main__':
         }
     }
     """
-
-

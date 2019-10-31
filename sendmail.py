@@ -6,8 +6,11 @@ from email.mime.text import MIMEText
 from email.header import Header
 import sys
 import os
+import requests
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from config import conf
+
+WeixinAlertUrl = conf.CONFIG.get('weixin').get('WeixinAlertUrl')
 
 def sendMail(address, sub, content):
     mail_from = conf.CONFIG.get('email').get('email_username')
@@ -25,6 +28,10 @@ def sendMail(address, sub, content):
     sm.quit()
 
 
+def weixin_alert(users,message):
+    for user in users:
+        data = {'method': 'wechat', 'user': user, 'message': message}
+        req = requests.post(WeixinAlertUrl,data=data)
 
 
 def main():
