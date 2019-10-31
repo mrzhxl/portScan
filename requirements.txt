@@ -6,7 +6,6 @@ celery==4.3.0
 certifi==2019.6.16
 chardet==3.0.4
 curtsies==0.3.0
-Django==2.2.3
 greenlet==0.4.15
 idna==2.8
 kombu==4.6.3
