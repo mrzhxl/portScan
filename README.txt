@@ -38,7 +38,7 @@ redirect_stderr=true
 
 文件目录：
 portScan
-├── CmdbGetInfo.py              # 调用私有cmdb(扫描前需要从cmdb中获取所有项目ip，可以自己造数据，注释掉调用cmdb代码)
+├── CmdbGetInfo.py              # 调用私有cmdb
 ├── README.txt                  # 说明
 ├── WhiteListProcess.py         # 白名单程序
 ├── __init__.py
@@ -57,7 +57,7 @@ portScan
 │   ├── 项目名.txt
 ├── logs                        # 日志目录
 ├── lowscan.py                  # 全部端口扫描
-├── main.sh                     # 高危\全部端口扫描
+├── main.sh
 ├── portlist                    # 端口目录，每个项目一个文件，danger_ports.txt高危端口列表，all_ports.txt为全部扫描的端口列表
 │   ├── all_ports.txt
 │   └── danger_ports.txt
@@ -69,6 +69,6 @@ portScan
 ├── templates                   # 模板
 │   └── report.html
 └── tmp                         # 序列化数据
-    └── report_high.txt
-   	└── report_low.txt
+    └── report.txt
+
 
