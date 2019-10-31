@@ -6,14 +6,15 @@ import sys
 import os
 import requests
 import json
-import time
-from multiprocessing import Pool as ThreadPool
+import yaml
+
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from config import conf
 
 
 IPLIST_dir = os.getcwd() + '/iplist'
+PORTLIST_dir = os.getcwd() + '/portlist'
 
 URL = conf.CONFIG.get('cmdb').get('cmdb_host')
 username = conf.CONFIG.get('cmdb').get('cmdb_username')
@@ -89,6 +90,33 @@ class GetCmdbInfo(object):
 						res.append(i.get('wip'))
 		return res
 
+	# 获取所有服务器信息
+	def get_all_info(self, pro):
+		'''
+		:param pro: 项目
+		:return: 项目外网ip
+		'''
+		uri = '/instance/?project='
+		ips = []
+		res = []
+		self.page = self.url_get(self.url + uri + pro)
+		self.results = self.page['results']
+		ips.append(self.results)
+		self.next_url = self.ifnext(self.page)
+		while self.next_url:
+			page = self.url_get(self.next_url)
+			results = page['results']
+
+			ips.append(results)
+			self.next_url = self.ifnext(page)
+
+		for infos in ips:
+			for info in infos:
+				if info.get('instance_status').lower() == 'running':
+					if info.get('wip'):
+						res.append(info)
+		return res
+
 	# 获取项目外网ip
 	def get_pro_ip(self, pro):
 		'''
@@ -116,6 +144,54 @@ class GetCmdbInfo(object):
 						res.append(i.get('wip'))
 		return res
 
+	# 获取项目服务类型
+	def application(self,):
+		uri = '/instance'
+		apps = []
+		dic = {}
+		self.page = self.url_get(self.url + uri)
+		self.results = self.page['results']
+		apps.append(self.results)
+		self.next_url = self.ifnext(self.page)
+		while self.next_url:
+			page = self.url_get(self.next_url)
+			results = page['results']
+
+			apps.append(results)
+			self.next_url = self.ifnext(page)
+
+		for instance in apps:
+			for ins in instance:
+				if ins.get('instance_status').lower() == 'running':
+					if ins.get('wip'):
+						features = ins.get('application').replace(ins.get('project') + '-', '')
+						if ins.get('project') in dic.keys():
+							dic[ins.get('project')].update({features: '[]'})
+						else:
+							dic[ins.get('project')] = {features: '[]'}
+		#print(dic)
+		return dic
+
+
+
+# yaml转字典
+class get_yaml:
+	def __init__(self, file):
+		self.filename = file
+		self.yaml_data = self.__check_file()
+	def __check_file(self):
+		path = os.path.dirname(os.path.abspath(__file__))
+		file = PORTLIST_dir + self.filename
+		if os.path.exists(file):
+			with open(file, encoding="utf-8") as yaml_obj:
+				yaml_data = yaml_obj.read()
+			return yaml_data
+		else:
+			print('没有yaml文件')
+			exit(1)
+	def get_yaml_data(self):
+		data = yaml.load(self.yaml_data,Loader=yaml.FullLoader)
+		return data
 
 
 if __name__ == '__main__':
@@ -126,24 +202,37 @@ if __name__ == '__main__':
 	# 请求所有项目
 	pros = ip1.get_all_project()
 
-	# 请求所有服务器ip
-	# ips = ip1.get_all_ip()
-	# if os.path.exists(IPLIST_dir + '/allip.txt'):
-	# 	os.remove(IPLIST_dir + '/allip.txt')
-	# for ip in ips:
-	# 	with open(IPLIST_dir + '/allip.txt', 'a+') as allip:
-	# 		allip.write(ip + '\n')
+	# 读取本地yml
+	obj = get_yaml('/all_project_port.yml')
+	os.rename(PORTLIST_dir + '/all_project_port.yml', PORTLIST_dir + '/project_port.yml')
+	data = obj.get_yaml_data()
 
-	def main(pros):
-		pro_ips = ip1.get_pro_ip(pros)
-		if os.path.exists(IPLIST_dir + '/%s.txt' % pros):
-			os.remove(IPLIST_dir + '/%s.txt' % pros)
-		for pro_ip in pro_ips:
-			with open(IPLIST_dir + '/%s.txt' % pros, 'a+') as proip:
-				proip.write(pro_ip + '\n')
+
+	def main():
+		app = ip1.application()
+
+		for i in app:
+			for n in app[i]:
+				if n not in data[i]:
+					data[i][n] = []
+
+		with open(PORTLIST_dir + '/all_project_port.yml', 'a+', encoding='utf-8') as f:
+			for project in data.keys():
+				f.write(project + ':\n')
+				for features, value in data[project].items():
+					f.write('  ' + features + ':' + ' ' + json.dumps(value) + '\n')
+
+
 
 	# 多进程请求所有项目ip
-	pool = ThreadPool(th)
-	pool.map(main, pros)
-	pool.close()
-	pool.join()
+	# pool = ThreadPool(th)
+	# if os.path.exists(PORTLIST_dir + '/all_project_port.yml'):
+	# 		os.remove(PORTLIST_dir + '/all_project_port.yml')
+	# pool.map(main, pros)
+	# pool.close()
+	# pool.join()
+
+
+
+	main()
+
