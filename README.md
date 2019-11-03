@@ -12,7 +12,7 @@ celery地址：https://github.com/celery/celery/wiki
 
 ## 运行环境：
 
-CentOs 7及以上版本
+Centos 7及以上版本
 
 python 3.6
 
