@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import json
 import time
 import redis
 import pickle
@@ -10,6 +9,7 @@ from config import conf
 from jinja2 import Environment, PackageLoader
 import sys
 from sendmail import sendMail, weixin_alert
+from ScanTool import Scan
 
 sys.path.insert(0, '../')
 
@@ -26,34 +26,16 @@ pool = redis.ConnectionPool(host='%s' % REDIS_HOST, password='%s' % REDIS_PASSWO
 r = redis.Redis(connection_pool=pool)
 
 
-def show_scan_result(result):
-	results = {}
-	for val in result.values():
-		while not val.ready():
-			time.sleep(1)
-		res = json.loads(r.get('celery-task-meta-' + val.id))  # redis取结果
-
-		# 解析结果
-		if res.get('result'):
-			for ip in res['result']['scan']:
-				ports = []
-				for port in res['result']['scan'][ip]['tcp']:
-					ports.append(port)
-					results[ip] = ports
-
-	return results
-
-
-if __name__ == '__main__':
-	with open(os.getcwd() + '/tmp/' + 'report_low.txt', 'rb') as sfile:
+def display_result(clobj, reportFile):
+	scan = clobj()
+	with open(os.getcwd() + '/tmp/' + '%s' % reportFile, 'rb') as sfile:
 		task_lists = pickle.load(sfile)
 
 	tem = {}
 	for project in task_lists:
 		for pro_id, tasks_id in project.items():
-			results = show_scan_result(tasks_id)
+			results = scan.show_scan_result(tasks_id)
 			tem[pro_id] = {pro_id: pro_id, 'ip_port': results}
-
 
 	for project in list(tem.keys()):
 
@@ -72,13 +54,25 @@ if __name__ == '__main__':
 
 		times = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
 		# print(report)
+
+		# 发送邮件
 		sendMail(mailto, '端口告警-%s' % times, report)
 
+		# 微信
 		data = []
 		for project in tem:
 			for ip, port in tem[project]['ip_port'].items():
 				data1 = ip + '%s' % port
 				data.append(data1)
 
-			message = '端口告警：' + project + '%s' % data
+			message = '端口告警：'+ project + '\t' + '%s' % data
 			weixin_alert(Alertuserlist, message)
+
+if __name__ == '__main__':
+	if len(sys.argv) == 2:
+		if sys.argv[1] == 'dangerport':
+			display_result(Scan, 'report_high.txt')
+		elif sys.argv[1] == 'allport':
+			display_result(Scan, 'report_low.txt')
+	else:
+		print('Usage: %s {dangerport|allport}' % sys.argv[0])
