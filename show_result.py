@@ -65,7 +65,7 @@ def display_result(clobj, reportFile):
 				data1 = ip + '%s' % port
 				data.append(data1)
 
-			message = '端口告警：' + project + '%s' % data
+			message = '端口告警：'+ project + '\t' + '%s' % data
 			weixin_alert(Alertuserlist, message)
 
 if __name__ == '__main__':
