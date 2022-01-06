@@ -2,7 +2,7 @@ amqp==2.5.0
 billiard==3.6.0.0
 blessings==1.7
 bpython==0.18
-celery==4.3.0
+celery==5.2.2
 certifi==2019.6.16
 chardet==3.0.4
 curtsies==0.3.0
